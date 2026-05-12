@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>MMI Colorizer</title>
+
+  <script src="https://components.connect.trimble.com/trimble-connect-workspace-api/index.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 16px;
+      background: #f7f7f7;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .legend {
+      margin-top: 16px;
+      font-size: 14px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      margin: 6px 0;
+    }
+
+    .color-box {
+      width: 22px;
+      height: 22px;
+      margin-right: 8px;
+      border: 1px solid #999;
+    }
+
+    #status {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #333;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>MMI Colorizer</h2>
+
+  <button onclick="colorByMMI()">Color by MMI</button>
+  <button onclick="resetColors()">Reset colors</button>
+
+  <div class="legend">
+    <strong>Legend</strong>
+
+    <div class="row">
+      <div class="color-box" style="background:#ff0000"></div>
+      MMI 100 — red
+    </div>
+
+    <div class="row">
+      <div class="color-box" style="background:#ffa500"></div>
+      MMI 200 — orange
+    </div>
+
+    <div class="row">
+      <div class="color-box" style="background:#ffff00"></div>
+      MMI 300 — yellow
+    </div>
+
+    <div class="row">
+      <div class="color-box" style="background:#800080"></div>
+      MMI 350 — purple
+    </div>
+
+    <div class="row">
+      <div class="color-box" style="background:#00aa00"></div>
+      MMI 400 — green
+    </div>
+
+    <div class="row">
+      <div class="color-box" style="background:#0000ff"></div>
+      MMI 500 — blue
+    </div>
+  </div>
+
+  <div id="status">Connecting to Trimble Connect...</div>
+
+  <script>
+    let API = null;
+
+    async function connectToTrimble() {
+      try {
+        API = await TrimbleConnectWorkspace.connect(window.parent, (event, data) => {
+          console.log("Trimble event:", event, data);
+        });
+
+        setStatus("Connected. Open your models and press 'Color by MMI'.");
+      } catch (error) {
+        console.error(error);
+        setStatus("Could not connect to Trimble Connect.");
+      }
+    }
+
+    function setStatus(message) {
+      document.getElementById("status").innerText = message;
+    }
+
+    async function colorByMMI() {
+      if (!API) {
+        setStatus("API is not connected yet.");
+        return;
+      }
+
+      setStatus("Resetting existing colors...");
+
+      await API.viewer.setObjectState(undefined, {
+        color: "reset"
+      });
+
+      const mmiRules = [
+        { values: [100, "100"], color: "#ff0000", label: "MMI 100" },
+        { values: [200, "200"], color: "#ffa500", label: "MMI 200" },
+        { values: [300, "300"], color: "#ffff00", label: "MMI 300" },
+        { values: [350, "350"], color: "#800080", label: "MMI 350" },
+        { values: [400, "400"], color: "#00aa00", label: "MMI 400" },
+        { values: [500, "500"], color: "#0000ff", label: "MMI 500" }
+      ];
+
+      for (const rule of mmiRules) {
+        setStatus("Coloring " + rule.label + "...");
+
+        await API.viewer.setObjectState(
+          {
+            parameter: {
+              properties: {
+                MMI: rule.values
+              }
+            }
+          },
+          {
+            color: rule.color
+          }
+        );
+      }
+
+      setStatus("Done. Objects are colored by MMI.");
+    }
+
+    async function resetColors() {
+      if (!API) {
+        setStatus("API is not connected yet.");
+        return;
+      }
+
+      await API.viewer.setObjectState(undefined, {
+        color: "reset"
+      });
+
+      setStatus("Colors reset.");
+    }
+
+    connectToTrimble();
+  </script>
+</body>
+</html>
