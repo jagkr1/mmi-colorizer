@@ -97,18 +97,29 @@
   <script>
     let API = null;
 
-    async function connectToTrimble() {
-      try {
-        API = await TrimbleConnectWorkspace.connect(window.parent, (event, data) => {
-          console.log("Trimble event:", event, data);
-        });
+async function connectToTrimble() {
+  try {
+    API = await TrimbleConnectWorkspace.connect(window.parent, (event, data) => {
+      console.log("Trimble event:", event, data);
 
-        setStatus("Connected. Open your models and press 'Color by MMI'.");
-      } catch (error) {
-        console.error(error);
-        setStatus("Could not connect to Trimble Connect.");
+      if (event === "extension.command") {
+        console.log("Extension command:", data);
       }
-    }
+    });
+
+    await API.ui.setMenu({
+      title: "MMI Colorizer",
+      command: "mmi_colorizer_open"
+    });
+
+    await API.ui.setActiveMenuItem("mmi_colorizer_open");
+
+    setStatus("Connected. Open your models and press 'Color by MMI'.");
+  } catch (error) {
+    console.error(error);
+    setStatus("Could not connect to Trimble Connect.");
+  }
+}
 
     function setStatus(message) {
       document.getElementById("status").innerText = message;
